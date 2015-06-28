@@ -32,6 +32,17 @@ Performance and limits
  - Move path parameters into tuples?
  - Use `forward_as_parameters` or whatever that was?
 
+Internals
+---------
+
+Various internal frustrations.
+
+### Removing boost
+
+ - Leaves `iterator_facade` on the floor :(
+ - Switch to wte::Optional from boost::optional
+ - Use C++11 random utilities in tests
+
 Testing
 -------
 
