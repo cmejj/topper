@@ -1,0 +1,12 @@
+[submodule "third_party/gtest"]
+	path = third_party/gtest
+	url = https://git.chromium.org/git/external/googletest.git
+[submodule "third_party/http-parser"]
+	path = third_party/http-parser
+	url = http://github.com/joyent/http-parser.git
+[submodule "third_party/google-glog"]
+	path = third_party/google-glog
+	url = https://github.com/flandr/google-glog.git
+[submodule "third_party/what-the-event"]
+	path = third_party/what-the-event
+	url = git@github.com:flandr/what-the-event.git
