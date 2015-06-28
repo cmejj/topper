@@ -10,3 +10,6 @@
 [submodule "third_party/what-the-event"]
 	path = third_party/what-the-event
 	url = git@github.com:flandr/what-the-event.git
+[submodule "third_party/ccmetrics"]
+	path = third_party/ccmetrics
+	url = https://github.com/flandr/ccmetrics

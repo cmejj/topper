@@ -36,6 +36,7 @@ add_library(${LIBTOPPER_SHARED_LIBRARY} SHARED ${libtopper_SRCS})
 target_link_libraries(${LIBTOPPER_SHARED_LIBRARY}
     http_parser
     ${glog_STATIC_LIB}
+    ccmetrics
     wte
     ${EXTRA_LIBS}
 )

@@ -19,6 +19,7 @@ def _getIncludes():
     includes = [os.path.join(ext, "gtest", "include"),
             os.path.join(ext, "http-parser"),
             os.path.join(ext, "what-the-event/src"),
+            os.path.join(ext, "ccmetrics/src"),
             os.path.join("include"),
             os.path.join(build, "google-glog", "include"),
             boost_include,

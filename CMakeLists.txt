@@ -28,6 +28,7 @@ include(External_Boost)
 include(External_http-parser)
 include(External_glog)
 include(External_wte)
+include(External_ccmetrics)
 
 # Use C++11
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")

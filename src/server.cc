@@ -28,6 +28,10 @@
 #include <thread>
 #include <unordered_map>
 
+#include "ccmetrics/detail/define_once.h"
+#include "ccmetrics/metric_registry.h"
+#include "ccmetrics/timer.h"
+
 #include "wte/event_base.h"
 
 #include "logging.h"
@@ -80,6 +84,8 @@ public:
     void registerResource(Resource *resource, detail::Methods const& methods) {
         application_.registerResource(resource, methods);
     }
+
+    ccmetrics::MetricRegistry& metrics() { return metrics_; }
 private:
     bool started_ = false;
     bool shutdown_ = false;
@@ -93,6 +99,9 @@ private:
 
     ServerInstance application_;
     AdminServer *admin_server_ = nullptr;
+
+    // Metrics
+    ccmetrics::MetricRegistry metrics_;
 };
 
 void ServerImpl::start() {
