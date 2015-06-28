@@ -408,8 +408,7 @@ void ServerImpl::start() {
         base_threads_.push_back(base_thread);
     }
 
-    // XXX connection listener in wte needs configurable addr
-    listener_->bind(port_);
+    listener_->bind(ipaddr_, port_);
     listener_->listen(128);
     listener_->startAccepting();
 
