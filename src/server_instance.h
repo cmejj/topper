@@ -20,8 +20,8 @@
  * SOFTWARE.
  */
 
-#ifndef SRC_SERVER_IMPL_H_
-#define SRC_SERVER_IMPL_H_
+#ifndef SRC_SERVER_INSTANCE_H_
+#define SRC_SERVER_INSTANCE_H_
 
 #include <functional>
 #include <string>
@@ -41,19 +41,13 @@
 
 namespace topper {
 
-class ServerImpl {
+class ServerInstance {
 public:
-    ServerImpl(std::string const& ipaddr, short port)
-        : ipaddr_(ipaddr), port_(port), listener_base_(wte::mkEventBase()),
-          listener_(wte::mkConnectionListener(listener_base_,
-            std::bind(&ServerImpl::acceptCb, this, std::placeholders::_1),
-            std::bind(&ServerImpl::listenErrorCb, this,
-                std::placeholders::_1))) { }
+    ServerInstance(std::string const& ipaddr, short port)
+        : ipaddr_(ipaddr), port_(port) { }
 
-    ~ServerImpl() {
-        if (started_) {
-            stopAndWait();
-        }
+    ~ServerInstance() {
+        delete listener_;
     }
 
     struct RequestContext;
@@ -78,7 +72,7 @@ public:
 
     // Context used for receiving a request
     struct RequestContext {
-        RequestContext(ServerImpl *server, wte::EventBase *base, int sock)
+        RequestContext(ServerInstance *server, wte::EventBase *base, int sock)
                 : server(server), wcb(this), rcb(this) {
             // TODO: dispatch to one of N bases
             stream = wte::wrapFd(base, sock);
@@ -103,16 +97,16 @@ public:
         http_parser parser;
         http_parser_settings settings;
         RequestBuilder builder;
-        ServerImpl *server;
+        ServerInstance *server;
         wte::Stream *stream;
 
         WriteCallback wcb;
         ReadCallback rcb;
     };
 
-    void start(); // throws
-    void stopAndWait(); // throws
-    void wait();
+    void start(wte::EventBase *listener_base,
+        std::vector<wte::EventBase*> const& handlers); // throws
+    void stop();
 
     void registerResource(Resource *resource, detail::Methods const& methods) {
         matcher_.addResource(resource, methods);
@@ -174,17 +168,10 @@ private:
     const short port_;
 
     // Runtime state
-    bool started_ = false;
-    bool shutdown_ = false;
-    wte::EventBase *listener_base_ = nullptr;
     wte::ConnectionListener *listener_ = nullptr;
 
-    // Request handlers
+    // Request handlers. These may be shared.
     std::vector<wte::EventBase*> bases_;
-    std::vector<std::thread*> base_threads_;
-    // TODO: worker pool for compute-intensive or blocking requests
-
-    std::thread main_;
 
     // Resources
     ResourceMatcher matcher_;
@@ -192,4 +179,4 @@ private:
 
 } // topper namespace
 
-#endif // SRC_SERVER_IMPL_H_
+#endif // SRC_SERVER_INSTANCE_H_

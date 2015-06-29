@@ -28,14 +28,11 @@
 #include <thread>
 #include <unordered_map>
 
-#include "wte/connection_listener.h"
 #include "wte/event_base.h"
-#include "wte/event_handler.h"
-#include "wte/stream.h"
 
 #include "logging.h"
 #include "server.h"
-#include "server_impl.h"
+#include "server_instance.h"
 
 namespace topper {
 
@@ -45,6 +42,105 @@ bool validateAddr(std::string const& ipaddr) {
     return inet_aton(ipaddr.c_str(), &tmp) == 1;
 }
 } // unnamed namespace
+
+class ServerImpl {
+public:
+    ServerImpl(std::string const& ip_addr, short port)
+        : listener_base_(wte::mkEventBase()),
+          application_(ip_addr, port) { }
+
+    ~ServerImpl() {
+        if (started_) {
+            stopAndWait();
+        }
+        delete listener_base_;
+    }
+
+    void start();
+    void stopAndWait();
+    void wait();
+
+    void registerResource(Resource *resource, detail::Methods const& methods) {
+        application_.registerResource(resource, methods);
+    }
+private:
+    bool started_ = false;
+    bool shutdown_ = false;
+    wte::EventBase *listener_base_ = nullptr;
+
+    std::vector<wte::EventBase*> bases_;
+    std::vector<std::thread*> base_threads_;
+    // TODO: worker pool for compute-intensive or blocking requests
+
+    std::thread main_;
+
+    ServerInstance application_;
+};
+
+void ServerImpl::start() {
+    if (started_) {
+        throw std::logic_error("Server has already been started");
+    }
+
+    // Bring up the worker bases
+    const int kBases = 4;
+    for (int i = 0; i < kBases; ++i) {
+        wte::EventBase *base = wte::mkEventBase();
+        std::thread *base_thread = new std::thread([base]() {
+                base->loop(wte::EventBase::LoopMode::FOREVER);
+            });
+        bases_.push_back(base);
+        base_threads_.push_back(base_thread);
+    }
+
+    // Bring up application server
+    application_.start(listener_base_, bases_);
+
+    // Ok we're off
+    started_ = true;
+
+    main_ = std::thread([this]() {
+            listener_base_->loop(wte::EventBase::LoopMode::FOREVER);
+        });
+}
+
+void ServerImpl::wait() {
+    if (!started_) {
+        return;
+    }
+    main_.join();
+}
+
+void ServerImpl::stopAndWait() {
+    if (!started_) {
+        throw std::logic_error("Server was not started");
+    }
+
+    if (shutdown_) {
+        // Already shut down
+        return;
+    }
+
+    listener_base_->runOnEventLoopAndWait([this]() -> void {
+            application_.stop();
+        });
+
+    listener_base_->stop();
+    for (wte::EventBase *base : bases_) {
+        base->stop();
+        delete base;
+    }
+    bases_.clear();
+
+    for (std::thread *thread : base_threads_) {
+        thread->join();
+        delete thread;
+    }
+    base_threads_.clear();
+
+    main_.join();
+    shutdown_ = true;
+}
 
 Server::Server(std::string const& ipaddr, short port) : internal_(nullptr) {
     if (!validateAddr(ipaddr)) {

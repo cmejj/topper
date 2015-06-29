@@ -20,69 +20,39 @@
  * SOFTWARE.
  */
 
-#include "server_impl.h"
+#include "server_instance.h"
+
+#include <atomic>
 
 namespace topper {
 
-void ServerImpl::wait() {
-    if (!started_) {
-        return;
-    }
-    main_.join();
-}
-
-void ServerImpl::stopAndWait() {
-    if (!started_) {
-        throw std::logic_error("Server was not started");
-    }
-
-    if (shutdown_) {
-        // Already shut down
+void ServerInstance::stop() {
+    if (!listener_) {
         return;
     }
 
     listener_->stopAccepting();
-    listener_base_->stop();
 
-    for (wte::EventBase *base : bases_) {
-        base->stop();
-        delete base;
-    }
-    bases_.clear();
-
-    for (std::thread *thread : base_threads_) {
-        thread->join();
-        delete thread;
-    }
-    base_threads_.clear();
-
-    main_.join();
-    shutdown_ = true;
+    delete listener_;
+    listener_ = nullptr;
 }
 
-void ServerImpl::start() {
-    if (started_) {
+void ServerInstance::start(wte::EventBase *listener_base,
+        std::vector<wte::EventBase*> const& handlers) {
+    if (listener_) {
         throw std::logic_error("Server has already been started");
     }
 
-    // Bring up the worker bases
-    const int kBases = 4;
-    for (int i = 0; i < kBases; ++i) {
-        wte::EventBase *base = wte::mkEventBase();
-        std::thread *base_thread = new std::thread([base]() {
-                base->loop(wte::EventBase::LoopMode::FOREVER);
-            });
-        bases_.push_back(base);
-        base_threads_.push_back(base_thread);
-    }
+    bases_ = handlers;
+    listener_ = wte::mkConnectionListener(listener_base,
+        std::bind(&ServerInstance::acceptCb, this, std::placeholders::_1),
+        std::bind(&ServerInstance::listenErrorCb, this, std::placeholders::_1));
 
     listener_->bind(ipaddr_, port_);
     listener_->listen(128);
     listener_->startAccepting();
 
     // Ok we're off
-    started_ = true;
-
     printf("Started server on %s port %hu\n", ipaddr_.c_str(),
         listener_->port());
     printf("The following resource paths are registered:\n\n");
@@ -90,23 +60,19 @@ void ServerImpl::start() {
         printf("    %s\n", resource->path().c_str());
     }
     printf("\n");
-
-    main_ = std::thread([this]() {
-            listener_base_->loop(wte::EventBase::LoopMode::FOREVER);
-        });
 }
 
-void ServerImpl::listenErrorCb(std::exception const& e) {
+void ServerInstance::listenErrorCb(std::exception const& e) {
     LOG(INFO) << e.what();
 }
 
-wte::EventBase* ServerImpl::chooseBase() {
+wte::EventBase* ServerInstance::chooseBase() {
     // Simply round-robin for the moment
     static std::atomic<int> iter(0);
     return bases_[++iter % bases_.size()];
 }
 
-void ServerImpl::acceptCb(int fd) {
+void ServerInstance::acceptCb(int fd) {
     wte::EventBase *base = chooseBase();
 
     // Released on error or completion
@@ -116,23 +82,23 @@ void ServerImpl::acceptCb(int fd) {
     base->runOnEventLoop([ctx]() { ctx->stream->startRead(&ctx->rcb); });
 }
 
-void ServerImpl::WriteCallback::complete(wte::Stream *s) {
+void ServerInstance::WriteCallback::complete(wte::Stream *s) {
     DCHECK(ctx_->stream == s); // XXX this parameter is apparently silly
     // TODO: support keepalives
     delete ctx_;
 }
 
-void ServerImpl::WriteCallback::error(std::runtime_error const& e) {
+void ServerInstance::WriteCallback::error(std::runtime_error const& e) {
     LOG(INFO) << "While writing: " << e.what();
     delete ctx_;
 }
 
-void ServerImpl::ReadCallback::error(std::runtime_error const& e) {
+void ServerInstance::ReadCallback::error(std::runtime_error const& e) {
     LOG(INFO) << "While reading: " << e.what();
     delete ctx_;
 }
 
-void ServerImpl::ReadCallback::eof() {
+void ServerInstance::ReadCallback::eof() {
     int rc = http_parser_execute(&ctx_->parser, &ctx_->settings, nullptr, 0);
     if (rc != 0) {
         LOG(INFO) << "Error on eof";
@@ -140,7 +106,7 @@ void ServerImpl::ReadCallback::eof() {
     }
 }
 
-void ServerImpl::ReadCallback::available(wte::Buffer *buffer) {
+void ServerInstance::ReadCallback::available(wte::Buffer *buffer) {
     std::vector<wte::Extent> extents;
     size_t drain = 0;
     buffer->peek(-1, &extents);

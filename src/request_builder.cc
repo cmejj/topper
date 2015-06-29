@@ -21,12 +21,12 @@
  */
 
 #include "request_builder.h"
-#include "server_impl.h"
+#include "server_instance.h"
 
 namespace topper {
 
 RequestBuilder* RequestBuilder::builder(void *data) {
-    auto ctx = reinterpret_cast<ServerImpl::RequestContext*>(data);
+    auto ctx = reinterpret_cast<ServerInstance::RequestContext*>(data);
     return &ctx->builder;
 }
 
