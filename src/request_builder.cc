@@ -20,66 +20,14 @@
  * SOFTWARE.
  */
 
-#include <arpa/inet.h>
-#include <string.h>
-
-#include <exception>
-#include <string>
-#include <thread>
-#include <unordered_map>
-
-#include "wte/connection_listener.h"
-#include "wte/event_base.h"
-#include "wte/event_handler.h"
-#include "wte/stream.h"
-
-#include "logging.h"
-#include "server.h"
+#include "request_builder.h"
 #include "server_impl.h"
 
 namespace topper {
 
-namespace {
-bool validateAddr(std::string const& ipaddr) {
-    struct in_addr tmp;
-    return inet_aton(ipaddr.c_str(), &tmp) == 1;
+RequestBuilder* RequestBuilder::builder(void *data) {
+    auto ctx = reinterpret_cast<ServerImpl::RequestContext*>(data);
+    return &ctx->builder;
 }
-} // unnamed namespace
-
-Server::Server(std::string const& ipaddr, short port) : internal_(nullptr) {
-    if (!validateAddr(ipaddr)) {
-        throw std::invalid_argument("Invalid address " + ipaddr);
-    }
-    internal_ = new ServerImpl(ipaddr, port);
-}
-
-Server::~Server() {
-    delete internal_;
-}
-
-void Server::start() {
-    internal_->start();
-}
-
-void Server::stopAndWait() {
-    internal_->stopAndWait();
-}
-
-void Server::wait() {
-    internal_->wait();
-}
-
-//
-// Registration helper
-//
-
-namespace detail {
-
-void doRegister(ServerImpl *server, Resource *resource,
-        Methods const& methods) {
-    server->registerResource(resource, methods);
-}
-
-} // detail namespace
 
 } // topper namespace
