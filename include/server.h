@@ -89,6 +89,7 @@ public:
     * The admin server provides the following endpoints:
     *
     *      /ping           Responds 'pong' to indicate that the server is up
+    *      /metrics        Returns server metrics in JSON format
     *
     * @param ipaddr the interface to run on (typically the loopback ip)
     * @param port the port to bind (or 0 to use any ephemeral port)

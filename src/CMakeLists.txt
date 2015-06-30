@@ -15,6 +15,7 @@ set(LIBTOPPER_SHARED_LIBRARY
 # Source translation units
 set(libtopper_SRCS
     entity.cc
+    metrics_resource.cc
     parameter.cc
     request.cc
     resource_matcher.cc

@@ -35,6 +35,7 @@
 #include "wte/event_base.h"
 
 #include "logging.h"
+#include "metrics_resource.h"
 #include "server.h"
 #include "server_instance.h"
 
@@ -55,11 +56,17 @@ public:
 };
 
 struct AdminServer {
-    AdminServer(std::string const& ipaddr, short port) : server(ipaddr, port) {
+    AdminServer(std::string const& ipaddr, short port,
+                ccmetrics::MetricRegistry *metrics)
+            : server(ipaddr, port, metrics),
+              server_metrics(metrics) {
         server.registerResource(&ping, detail::bindMethods(&ping));
+        server.registerResource(&server_metrics,
+            detail::bindMethods(&server_metrics));
     }
     ServerInstance server;
     PingResource ping;
+    MetricsResource server_metrics;
 };
 } // unnamed namespace
 
@@ -67,7 +74,7 @@ class ServerImpl {
 public:
     ServerImpl(std::string const& ip_addr, short port)
         : listener_base_(wte::mkEventBase()),
-          application_(ip_addr, port) { }
+          application_(ip_addr, port, &metrics_) { }
 
     ~ServerImpl() {
         if (started_) {
@@ -84,8 +91,6 @@ public:
     void registerResource(Resource *resource, detail::Methods const& methods) {
         application_.registerResource(resource, methods);
     }
-
-    ccmetrics::MetricRegistry& metrics() { return metrics_; }
 private:
     bool started_ = false;
     bool shutdown_ = false;
@@ -97,11 +102,11 @@ private:
 
     std::thread main_;
 
-    ServerInstance application_;
-    AdminServer *admin_server_ = nullptr;
-
     // Metrics
     ccmetrics::MetricRegistry metrics_;
+
+    ServerInstance application_;
+    AdminServer *admin_server_ = nullptr;
 };
 
 void ServerImpl::start() {
@@ -136,7 +141,7 @@ void ServerImpl::startAdminServer(std::string const& ipaddr, short port) {
         throw std::logic_error("Admin server has already been started");
     }
 
-    admin_server_ = new AdminServer(ipaddr, port);
+    admin_server_ = new AdminServer(ipaddr, port, &metrics_);
     listener_base_->runOnEventLoop([this]() -> void {
             admin_server_->server.start(listener_base_, bases_);
         });

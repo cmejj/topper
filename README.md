@@ -82,6 +82,50 @@ Request entities
 
 In progress.
 
+Admin endpoints
+---------------
+
+Topper servers can be configured to expose an administration interface on a
+separate `ip, port` tuple. This interface includes the following endpoints:
+
+    /ping
+    /metrics
+
+The `/ping` endpoint responds to `GET` requests with a document containing
+`pong`, and can be used to check whether the server is running.
+
+The `/metrics` endpoint publishes server metrics in JSON format:
+
+```
+# Admin port 40967
+
+$ curl http://127.0.0.1:40967/metrics |python -mjson.tool
+{
+    "counters": {},
+    "timers": {
+        "topper.resource.dispatch": {
+            "count": 14,
+            "m15_rate": 0.2110435060583438,
+            "m1_rate": 0.3523419255254859,
+            "m5_rate": 0.23273016404633015,
+            "max": 0.003941,
+            "mean": 0.0003459285714285714,
+            "min": 2.3e-05,
+            "p50": 2.55e-05,
+            "p75": 8.274999999999999e-05,
+            "p95": 0.003941,
+            "p99": 0.003941,
+            "p999": 0.003941,
+            "stdev": 0.0010411176686619047
+        }
+    }
+}
+```
+
+Runtime application metrics are provided by the
+[ccmetrics](https://github.com/flandr/ccmetrics) library; refer to the library
+documentation for details.
+
 License
 -------
 

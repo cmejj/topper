@@ -27,6 +27,10 @@
 #include <string>
 #include <thread>
 
+#include "ccmetrics/detail/define_once.h"
+#include "ccmetrics/metric_registry.h"
+#include "ccmetrics/timer.h"
+
 #include "wte/connection_listener.h"
 #include "wte/event_base.h"
 #include "wte/event_handler.h"
@@ -43,8 +47,9 @@ namespace topper {
 
 class ServerInstance {
 public:
-    ServerInstance(std::string const& ipaddr, short port)
-        : ipaddr_(ipaddr), port_(port) { }
+    ServerInstance(std::string const& ipaddr, short port,
+            ccmetrics::MetricRegistry *metrics)
+        : ipaddr_(ipaddr), port_(port), metrics_(metrics) { }
 
     ~ServerInstance() {
         delete listener_;
@@ -115,6 +120,8 @@ public:
     ResourceMatcher const& matcher() const {
         return matcher_;
     }
+
+    ccmetrics::MetricRegistry& metrics() { return *metrics_; }
 private:
     static Response dispatch(Request const& req, Match const& handler) {
         switch (req.type()) {
@@ -144,7 +151,15 @@ private:
             auto match = ctx->server->matcher_.match(req.path());
 
             // Dispatch to the resource or return 404
-            return match ? dispatch(req, match.get()) : Response::notFound();
+            if (match) {
+                // TODO: would be nice to have different metrics for each
+                // endpoint. To amortize lookups, should cache the timer
+                // handle in the Resource.
+                SCOPED_TIMER("topper.resource.dispatch",
+                    ctx->server->metrics());
+                return dispatch(req, match.get());
+            }
+            return Response::notFound();
         } catch (std::exception const& e) {
             return Response(HttpCode::INTERNAL_ERROR, MediaType::TEXT_PLAIN,
                 e.what());
@@ -168,6 +183,7 @@ private:
     const short port_;
 
     // Runtime state
+    ccmetrics::MetricRegistry *metrics_ = nullptr;
     wte::ConnectionListener *listener_ = nullptr;
 
     // Request handlers. These may be shared.
