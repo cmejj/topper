@@ -20,43 +20,14 @@
  * SOFTWARE.
  */
 
-#include <gtest/gtest.h>
-
-#include "server.h"
-#include "util.h"
+#include "request_builder.h"
+#include "server_instance.h"
 
 namespace topper {
 
-class ServerTest : public ::testing::Test {
-protected:
-    static EphemeralPorts ports;
-};
-
-EphemeralPorts ServerTest::ports{};
-
-TEST_F(ServerTest, MalformedAddressThrows) {
-    ASSERT_THROW({Server server("1.2.3.4.5", ports.get());},
-        std::invalid_argument);
-    ASSERT_THROW({Server server("foo", ports.get());},
-        std::invalid_argument);
-}
-
-TEST_F(ServerTest, StopAndWaitThrowsIfNotStarted) {
-    Server server("127.0.0.1", ports.get());
-    ASSERT_THROW({server.stopAndWait();}, std::logic_error);
-}
-
-TEST_F(ServerTest, StartThrowsIfAlreadyStarted) {
-    Server server("127.0.0.1", ports.get());
-    server.start();
-    ASSERT_THROW({server.start();}, std::logic_error);
-}
-
-TEST_F(ServerTest, StartAdminService) {
-    Server server("127.0.0.1", ports.get());
-    server.startAdminServer("127.0.0.1", ports.get());
-    server.start();
-    // XXX need an HTTP client for tests
+RequestBuilder* RequestBuilder::builder(void *data) {
+    auto ctx = reinterpret_cast<ServerInstance::RequestContext*>(data);
+    return &ctx->builder;
 }
 
 } // topper namespace

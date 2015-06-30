@@ -115,6 +115,10 @@ void ResourceMatcher::clear() {
             for (auto const& tuple : cur.node->children) {
                 searchStack.push({tuple.second, cur.node, /*visited=*/ false});
             }
+            if (cur.node->varChild) {
+                searchStack.push({cur.node->varChild, cur.node,
+                    /*visited=*/ false});
+            }
             // Forget about the children
             cur.node->children.clear();
             continue;

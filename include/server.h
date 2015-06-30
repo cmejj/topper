@@ -82,6 +82,19 @@ public:
      * Will not return until the server has been stopped.
      */
     void wait();
+
+   /**
+    * Start an admin interface running on the specified interface and port.
+    *
+    * The admin server provides the following endpoints:
+    *
+    *      /ping           Responds 'pong' to indicate that the server is up
+    *
+    * @param ipaddr the interface to run on (typically the loopback ip)
+    * @param port the port to bind (or 0 to use any ephemeral port)
+    * @throws an exception if invoked more than once
+    */
+   void startAdminServer(std::string const& ipaddr, short port);
 private:
     ServerImpl *internal_;
 };

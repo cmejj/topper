@@ -19,7 +19,9 @@ set(libtopper_SRCS
     request.cc
     resource_matcher.cc
     response.cc
+    request_builder.cc
     server.cc
+    server_instance.cc
 )
 
 # Set the include directories

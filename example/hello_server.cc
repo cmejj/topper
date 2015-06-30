@@ -117,6 +117,9 @@ int main(int argc, char **argv) {
     server.registerResource(&pphello);
     server.start();
 
+    // Also start an admin server on some ephemeral port
+    server.startAdminServer("127.0.0.1", 0);
+
     // Wait for interruption
     server.wait();
     return 0;
