@@ -52,4 +52,11 @@ TEST_F(ServerTest, StartThrowsIfAlreadyStarted) {
     ASSERT_THROW({server.start();}, std::logic_error);
 }
 
+TEST_F(ServerTest, StartAdminService) {
+    Server server("127.0.0.1", ports.get());
+    server.startAdminServer("127.0.0.1", ports.get());
+    server.start();
+    // XXX need an HTTP client for tests
+}
+
 } // topper namespace

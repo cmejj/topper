@@ -41,6 +41,22 @@ bool validateAddr(std::string const& ipaddr) {
     struct in_addr tmp;
     return inet_aton(ipaddr.c_str(), &tmp) == 1;
 }
+
+class PingResource : public Resource {
+public:
+    PingResource() : Resource("/ping") { }
+    Response get() const {
+        return Response(HttpCode::OK, MediaType::TEXT_PLAIN, "pong\n");
+    }
+};
+
+struct AdminServer {
+    AdminServer(std::string const& ipaddr, short port) : server(ipaddr, port) {
+        server.registerResource(&ping, detail::bindMethods(&ping));
+    }
+    ServerInstance server;
+    PingResource ping;
+};
 } // unnamed namespace
 
 class ServerImpl {
@@ -59,6 +75,7 @@ public:
     void start();
     void stopAndWait();
     void wait();
+    void startAdminServer(std::string const& ipaddr, short port);
 
     void registerResource(Resource *resource, detail::Methods const& methods) {
         application_.registerResource(resource, methods);
@@ -75,6 +92,7 @@ private:
     std::thread main_;
 
     ServerInstance application_;
+    AdminServer *admin_server_ = nullptr;
 };
 
 void ServerImpl::start() {
@@ -104,6 +122,17 @@ void ServerImpl::start() {
         });
 }
 
+void ServerImpl::startAdminServer(std::string const& ipaddr, short port) {
+    if (admin_server_) {
+        throw std::logic_error("Admin server has already been started");
+    }
+
+    admin_server_ = new AdminServer(ipaddr, port);
+    listener_base_->runOnEventLoop([this]() -> void {
+            admin_server_->server.start(listener_base_, bases_);
+        });
+}
+
 void ServerImpl::wait() {
     if (!started_) {
         return;
@@ -123,6 +152,11 @@ void ServerImpl::stopAndWait() {
 
     listener_base_->runOnEventLoopAndWait([this]() -> void {
             application_.stop();
+            if (admin_server_) {
+                admin_server_->server.stop();
+                delete admin_server_;
+                admin_server_ = nullptr;
+            }
         });
 
     listener_base_->stop();
@@ -163,6 +197,10 @@ void Server::stopAndWait() {
 
 void Server::wait() {
     internal_->wait();
+}
+
+void Server::startAdminServer(std::string const& ipaddr, short port) {
+    internal_->startAdminServer(ipaddr, port);
 }
 
 //
