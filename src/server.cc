@@ -134,6 +134,9 @@ void ServerImpl::start() {
     main_ = std::thread([this]() {
             listener_base_->loop(wte::EventBase::LoopMode::FOREVER);
         });
+
+    // Wait for the loop to start running by running a nop.
+    listener_base_->runOnEventLoopAndWait([]() -> void { }, /*defer=*/ true);
 }
 
 void ServerImpl::startAdminServer(std::string const& ipaddr, short port) {
