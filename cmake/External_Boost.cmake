@@ -1,4 +1,4 @@
-find_package(Boost 1.55.0)
+find_package(Boost 1.46.0)
 
 # We only use the Boost headers
 if(Boost_FOUND)

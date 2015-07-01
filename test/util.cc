@@ -21,9 +21,7 @@
  */
 
 #include <algorithm>
-
-#include <boost/random/mersenne_twister.hpp>
-#include <boost/random/uniform_int_distribution.hpp>
+#include <random>
 
 #include "util.h"
 
@@ -45,11 +43,11 @@ EphemeralPorts::EphemeralPorts() {
         ports_.push_back(i);
     }
 
-    boost::mt19937 gen;
+    std::mt19937 gen;
 
     // Fischer-Yates shuffle
     for (size_t i = ports_.size() - 1; i > 0; --i) {
-        boost::random::uniform_int_distribution<size_t> range(0, i);
+        std::uniform_int_distribution<size_t> range(0, i);
         size_t j = range(gen);
         std::swap(ports_[i], ports_[j]);
     }
