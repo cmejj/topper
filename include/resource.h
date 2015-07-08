@@ -56,6 +56,10 @@ public:
         return Response::notAllowed();
     }
 
+    Response head() const {
+        return Response::notAllowed();
+    }
+
     ~Resource() { }
 
     /** @return the path template for the resource. */

@@ -89,6 +89,10 @@ public:
     Response del() const {
         return resp_;
     }
+
+    Response head() const {
+        return resp_;
+    }
 private:
     Response resp_ {HttpCode::OK, MediaType::TEXT_PLAIN, ""};
 };
@@ -101,6 +105,7 @@ TEST(ResourceTest, ImplementedMethodsOverrideDefaults) {
     EXPECT_EQ(HttpCode::OK, run(r, &OkResource::put, p, u).code());
     EXPECT_EQ(HttpCode::OK, run(r, &OkResource::post, p, u).code());
     EXPECT_EQ(HttpCode::OK, run(r, &OkResource::del, p, u).code());
+    EXPECT_EQ(HttpCode::OK, run(r, &OkResource::head, p, u).code());
 }
 
 // Resource with methods that use query parameters
