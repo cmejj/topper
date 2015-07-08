@@ -70,12 +70,43 @@ In progress.
 Query parameters
 ----------------
 
-In progress.
+Besides path parameters, Topper resources can access parameters passed in the
+URI query component, as defined in [RFC
+3986](https://tools.ietf.org/html/rfc3986#section-3.4). These are made
+available to the request handler when a `QueryParams` argument is present in
+the handler signature, e.g.
+
+    Response get(QueryParams const& params)
+
+Parameters may have multiple values, which are returned in a `std::vector`
+from the `QueryParams::get` method.
 
 Post parameters
 ---------------
 
-In progress.
+Likewise, parameters passed as `application/x-www-form-urlencoded` in a `POST`
+message are available as an optional `PostParams` argument in the handler
+method.
+
+Header parameters
+-----------------
+
+Headers in an HTTP request are available to resources as an optional _header
+parameters_ argument in the resource handler signature, e.g.
+
+```
+Response get(HeaderParams const& headers)
+```
+
+Header values are returned from the `get(...)` method, which performs
+_case-sensitive_ matching on header values. Header parameters can be combined
+with all other parameter types in a resource handler method; for example,
+the following is a valid handler for a resource with one path parameter:
+
+```
+Response post(StringParam const& pathparam, HeaderParams const& headers,
+    PostParams const& postparams)
+```
 
 Request entities
 ----------------
