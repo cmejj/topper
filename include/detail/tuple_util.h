@@ -57,6 +57,12 @@ inline PostParams const& GetParam<PostParams>::get(std::vector<std::string> cons
 }
 
 template<>
+inline HeaderParams const& GetParam<HeaderParams>::get(std::vector<std::string> const&,
+        int, UriInfo const& uriInfo) {
+    return uriInfo.headerParams;
+}
+
+template<>
 inline Entity const& GetParam<Entity>::get(std::vector<std::string> const&,
         int, UriInfo const& uriInfo) {
     return uriInfo.entity;

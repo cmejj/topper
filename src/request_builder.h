@@ -152,8 +152,10 @@ public:
             postParams = parseQueryParameters(body_.c_str(), body_.size());
         }
 
-        return Request(path, body_, headers_, convertMethod(method),
-            std::move(queryParams), std::move(postParams));
+        // Sigh. Fix this.
+        auto copy = headers_;
+        return Request(path, body_, convertMethod(method),
+            std::move(queryParams), std::move(postParams), std::move(copy));
     }
 private:
     // State for parsing headers. See documentation at

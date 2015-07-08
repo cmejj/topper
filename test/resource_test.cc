@@ -50,8 +50,9 @@ Response run(Resource const& resource, Response (R::*method)(Args...) const,
 UriInfo mkBlankUriInfo() {
     static QueryParamsImpl queryParams;
     static PostParamsImpl postParams;
+    static HeaderParamsImpl headerParams;
     static Entity entity;
-    return UriInfo { queryParams, postParams, entity };
+    return UriInfo { queryParams, postParams, headerParams, entity };
 }
 
 TEST(ResourceTest, DefaultResponseIsNotAllowed) {
@@ -144,8 +145,9 @@ TEST(ResourceTest, QueryParamsArePassedToResource) {
         std::unordered_multimap<std::string, std::string>{
             { "foo", "1" }, { "bar", "2" } });
     PostParamsImpl postParams;
+    HeaderParamsImpl headerParams;
     Entity entity;
-    UriInfo u { queryParams, postParams, entity };
+    UriInfo u { queryParams, postParams, headerParams, entity };
     auto compare = [&u](QueryParams const& qp) -> void {
             ASSERT_EQ(u.queryParams, qp);
         };
@@ -173,15 +175,46 @@ private:
 TEST(ResourceTest, PostParamsArePassedToResourcePostMethod) {
     std::vector<std::string> p { "foo" };
     QueryParamsImpl queryParams;
+    HeaderParamsImpl headerParams;
     PostParamsImpl postParams(
         std::unordered_multimap<std::string, std::string>{
             { "post1", "1" }, { "post2", "2" } });
     Entity entity;
-    UriInfo u { queryParams, postParams, entity };
+    UriInfo u { queryParams, postParams, headerParams, entity };
     auto compare = [&u](PostParams const& pp) -> void {
             ASSERT_EQ(u.postParams, pp);
         };
     PostParamResource<decltype(compare)> r(compare);
+    EXPECT_EQ(HttpCode::OK, run(r, &decltype(r)::post, p, u).code());
+}
+
+template<typename Func>
+class HeaderParamResource : public Resource {
+public:
+    HeaderParamResource(Func f) : Resource("/foo"), f_(f) { }
+
+    Response post(HeaderParams const& hp) const {
+        f_(hp);
+        return resp_;
+    }
+private:
+    Func f_;
+    Response resp_ {HttpCode::OK, MediaType::TEXT_PLAIN, ""};
+};
+
+TEST(ResourceTest, HeaderParamsArePassedToResource) {
+    std::vector<std::string> p { "foo" };
+    QueryParamsImpl queryParams;
+    HeaderParamsImpl headerParams(
+        std::unordered_map<std::string, std::string>{
+            { "header1", "value1" }, { "header2", "value2" } });
+    PostParamsImpl postParams;
+    Entity entity;
+    UriInfo u { queryParams, postParams, headerParams, entity };
+    auto compare = [&u](HeaderParams const& hp) -> void {
+            ASSERT_EQ(u.headerParams, hp);
+        };
+    HeaderParamResource<decltype(compare)> r(compare);
     EXPECT_EQ(HttpCode::OK, run(r, &decltype(r)::post, p, u).code());
 }
 

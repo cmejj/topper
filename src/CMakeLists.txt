@@ -17,7 +17,6 @@ set(libtopper_SRCS
     entity.cc
     metrics_resource.cc
     parameter.cc
-    request.cc
     resource_matcher.cc
     response.cc
     request_builder.cc

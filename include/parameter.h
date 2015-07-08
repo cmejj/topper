@@ -112,9 +112,27 @@ protected:
     QueryParams() { }
 };
 
+class HeaderParams {
+public:
+    virtual ~HeaderParams() { }
+
+    /**
+     * Return the value of a named header, or the empty string.
+     *
+     * @param name the header name
+     * @return the header value, or empty string
+     */
+    // TODO: should this be optional, to differentiate between absent and empty?
+    virtual std::string get(std::string const& name) const = 0;
+    virtual bool operator==(HeaderParams const&) const = 0;
+protected:
+    HeaderParams() { }
+};
+
 struct UriInfo {
     QueryParams const& queryParams;
     PostParams const& postParams;
+    HeaderParams const& headerParams;
     Entity const& entity;
 };
 

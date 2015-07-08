@@ -66,6 +66,29 @@ inline std::vector<std::string> QueryParamsImpl::get(
     return ret;
 }
 
+class HeaderParamsImpl : public HeaderParams {
+public:
+    explicit HeaderParamsImpl(
+            std::unordered_map<std::string, std::string>  &&params)
+        : params_(params) { }
+    HeaderParamsImpl() { }
+
+    virtual std::string get(std::string const& name) const final {
+        auto it = params_.find(name);
+        if (it != params_.end()) {
+            return it->second;
+        }
+        return "";
+    }
+    virtual bool operator==(HeaderParams const&) const final;
+private:
+    std::unordered_map<std::string, std::string> params_;
+};
+
+inline bool HeaderParamsImpl::operator==(HeaderParams const& o) const {
+    return params_ == static_cast<HeaderParamsImpl const&>(o).params_;
+}
+
 class PostParamsImpl : public PostParams {
 public:
     explicit PostParamsImpl(

@@ -42,33 +42,32 @@ enum class HttpMethod {
 class Request {
 public:
     Request(std::string const& path, std::string const& body,
-            std::unordered_map<std::string, std::string> const& headers,
             HttpMethod type,
             std::unordered_multimap<std::string, std::string> &&queryParams,
-            std::unordered_multimap<std::string, std::string> &&postParams)
-        : path_(path), headers_(headers), type_(type),
+            std::unordered_multimap<std::string, std::string> &&postParams,
+            std::unordered_map<std::string, std::string> &&headerParams)
+        : path_(path), type_(type),
           data_({QueryParamsImpl(std::move(queryParams)),
-            PostParamsImpl(std::move(postParams)), Entity(body)}),
-          uriInfo_({data_.queryParams, data_.postParams, data_.entity})
+            PostParamsImpl(std::move(postParams)),
+            HeaderParamsImpl(std::move(headerParams)), Entity(body)}),
+          uriInfo_({data_.queryParams, data_.postParams, data_.headerParams,
+              data_.entity})
     { }
 
     // Returns the request URI path
     std::string const& path() const { return path_; }
-
-    // Returns the value of the named header, or null
-    const std::string* headerValue(std::string const& name) const;
 
     HttpMethod type() const { return type_; }
 
     UriInfo const& uriInfo() const { return uriInfo_; }
 private:
     const std::string path_;
-    const std::unordered_map<std::string, std::string> headers_;
     const HttpMethod type_;
 
     struct {
         QueryParamsImpl queryParams;
         PostParamsImpl postParams;
+        HeaderParamsImpl headerParams;
         Entity entity;
     } data_;
 
