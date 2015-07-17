@@ -45,6 +45,10 @@ A minimal Topper server requires only a few lines of code:
 Building
 --------
 
+    # Resolve transitive dependencies
+    git submodule update --init --recursive
+
+    # Then build
     mkdir build
     cd build
     cmake ..
